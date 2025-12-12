@@ -29,23 +29,58 @@ function Racer:new()
     local r = Entity:new()
     setmetatable(r, Racer)
     
-    r.spritesheet = love.graphics.newImage("assets/img/mario.png")
-    r.spritesheet:setFilter("nearest", "nearest")
+    r.mario_spritesheet = love.graphics.newImage("assets/img/mario.png")
+    r.mario_spritesheet:setFilter("nearest", "nearest")
+
+    r.smoke_spritesheet = love.graphics.newImage("assets/img/smoke_particles.png")
+    r.smoke_spritesheet:setFilter("nearest", "nearest")
     
     r.faces_sprites = {}
+    r.smoke_sprites = {}
+
+    -- states
     r.face = M
     r.direction = STRAIGHT
     r.time_in_neutral_input = 0
     r.pressed_time = 0
     r.current_turn_state = 1
     r.current_counterturn_state = 1
+    r.tires_smoking = false
 
-    r:loadSpriteSheet()
+    -- position values
+    r.x = 112
+    r.y = 150
+
+    r:loadMarioSpriteSheet()
+    r:loadSmokeSpriteSheet()
 
     return r
 end
 
-function Racer:loadSpriteSheet()
+function Racer:loadSmokeSpriteSheet()
+    local sprite_w = 16
+    local sprite_h = 16
+
+    self.smoke_sprites.big_smoke = love.graphics.newQuad(
+        0,
+        0,
+        sprite_w,
+        sprite_h,
+        self.smoke_spritesheet:getWidth(),
+        self.smoke_spritesheet:getHeight()
+    ) 
+
+    self.smoke_sprites.small_smoke = love.graphics.newQuad(
+        16,
+        0,
+        sprite_w,
+        sprite_h,
+        self.smoke_spritesheet:getWidth(),
+        self.smoke_spritesheet:getHeight()
+    ) 
+end
+
+function Racer:loadMarioSpriteSheet()
     local sprite_w = 31
     local sprite_h = 31
 
@@ -58,8 +93,8 @@ function Racer:loadSpriteSheet()
             current_y,
             sprite_w,
             sprite_h,
-            self.spritesheet:getWidth(),
-            self.spritesheet:getHeight()
+            self.mario_spritesheet:getWidth(),
+            self.mario_spritesheet:getHeight()
         ) 
 
         current_x = current_x + sprite_w
@@ -89,6 +124,10 @@ function Racer:update(dt, input_state)
             end
         end
 
+        if self.face <= L3 then
+            self.tires_smoking = true
+        end
+
     elseif input_state.input_direction == RIGHT and self.face < R5 then
         self.time_in_neutral_input = 0
 
@@ -104,7 +143,12 @@ function Racer:update(dt, input_state)
             end
         end
 
+        if self.face >= R3 then
+            self.tires_smoking = true
+        end
+
     elseif input_state.input_direction == STRAIGHT then
+        self.tires_smoking = false
         self.time_in_neutral_input = self.time_in_neutral_input + dt
     
         if self.face < M then -- facing left
@@ -128,7 +172,7 @@ function Racer:update(dt, input_state)
 end
 
 function Racer:draw()
-    love.graphics.draw(self.spritesheet, self.faces_sprites[self.face], 112, 150)
+    love.graphics.draw(self.mario_spritesheet, self.faces_sprites[self.face], self.x, self.y)
 end
 
 return Racer
