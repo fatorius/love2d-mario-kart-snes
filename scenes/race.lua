@@ -16,25 +16,35 @@ function scene.load()
     local r = Racer:new()
     table.insert(entities, r)
 
-    input_state.direction = STRAIGHT
+    input_state.input_direction = STRAIGHT
+    input_state.previous_direction = STRAIGHT
+    input_state.direction_changed = false
     input_state.press_time = 0
 end
 
 function scene.update(dt)
-    if love.keyboard.isDown("right") then
-        input_state.direction = RIGHT
-        input_state.press_time = input_state.press_time + dt
-    elseif love.keyboard.isDown("left") then
-        input_state.direction = LEFT
+    local inputing_left = love.keyboard.isDown('left') and 1 or 0
+    local inputing_right = love.keyboard.isDown('right') and 1 or 0
+
+    input_state.input_direction = inputing_right - inputing_left
+
+    if input_state.input_direction ~= input_state.previous_direction then
+        input_state.direction_changed = true
+        input_state.press_time = 0
+    end
+
+    if input_state.input_direction ~= 0 then
         input_state.press_time = input_state.press_time + dt
     else
-        input_state.direction = STRAIGHT
         input_state.press_time = 0
     end
 
     for _, e in ipairs(entities) do
         e:update(dt, input_state)
     end
+
+    input_state.previous_direction = input_state.input_direction
+    input_state.direction_changed = false
 end
 
 function scene.draw()
