@@ -12,7 +12,7 @@ function loadScene(name)
 end
 
 function love.load()
-    love.window.setMode(800, 600, {
+    love.window.setMode(400, 300, {
         fullscreen = false,
         resizable = false,
         vsync = true
