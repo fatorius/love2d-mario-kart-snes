@@ -22,6 +22,7 @@ function love.load()
     SCALE_Y = love.graphics.getHeight() / VIRTUAL_H
 
     love.window.setTitle("Mario Kart SNES")
+    love.graphics.setDefaultFilter("nearest", "nearest")
 
     loadScene("begin")
 end

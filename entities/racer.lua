@@ -1,4 +1,5 @@
 local Entity = require("entities.entity")
+local Vector2D = require("math.vector2d")
 
 local Racer = setmetatable({}, { __index = Entity })
 Racer.__index = Racer
@@ -9,7 +10,7 @@ local L4 = 2
 local L3 = 3
 local L2 = 4
 local L1 = 5
-local M = 6
+local MIDDLE = 6
 local R1 = 7
 local R2 = 8
 local R3 = 9
@@ -21,35 +22,33 @@ local LEFT = -1
 local STRAIGHT = 0
 local RIGHT = 1
 
-local TURNING_TIMES = {0.05, 0.12, 0.18, 0.24, 0.30, 0.36, 0.42, 0.48, 0.54, 0.60, 0.66 }
-local RETURNING_TIMES = {0.06, 0.12, 0.17, 0.21, 0.33, 0.45, 0.57 }
-local COUNTERTURNING_TIMES ={0.03, 0.06, 0.09, 0.12, 0.15, 0.18}
-
 function Racer:new()
     local r = Entity:new()
     setmetatable(r, Racer)
     
     r.mario_spritesheet = love.graphics.newImage("assets/img/mario.png")
-    r.mario_spritesheet:setFilter("nearest", "nearest")
-
     r.smoke_spritesheet = love.graphics.newImage("assets/img/smoke_particles.png")
-    r.smoke_spritesheet:setFilter("nearest", "nearest")
     
     r.faces_sprites = {}
     r.smoke_sprites = {}
 
-    -- states
-    r.face = M
-    r.direction = STRAIGHT
-    r.time_in_neutral_input = 0
-    r.pressed_time = 0
-    r.current_turn_state = 1
-    r.current_counterturn_state = 1
-    r.tires_smoking = false
+    -- consts
+    r.ACCELERATION = 5
+    r.DECELERATION = 6
+    r.MAX_SPEED = 15
+    r.MIN_SPEED = 0
 
-    -- position values
-    r.x = 112
-    r.y = 150
+    -- states
+    r.face = MIDDLE
+
+    -- sprite positioning consts
+    r.SCREEN_X = 112
+    r.SCREEN_Y = 150
+
+    -- movimenting
+    r.x, r.y = 590, 400 -- posição no mundo
+    r.vDirection = Vector2D:new(0, 1) -- vetor de direção NORMALIZADO
+    r.vSpeed = Vector2D:new(0, 0) -- vetor de velocidade
 
     r:loadMarioSpriteSheet()
     r:loadSmokeSpriteSheet()
@@ -101,78 +100,72 @@ function Racer:loadMarioSpriteSheet()
     end
 end
 
-function Racer:update(dt, input_state)
-    self.pressed_time = input_state.press_time
+function Racer:accelerate(dt)
+    self.vSpeed.x = self.vSpeed.x + self.vDirection.x * self.ACCELERATION * dt
+    self.vSpeed.y = self.vSpeed.y + self.vDirection.y * self.ACCELERATION * dt
 
-    if input_state.direction_changed then
-        self.current_turn_state = 1
-        self.current_counterturn_state = 1
-    end
+    self.vSpeed:clamp(self.MAX_SPEED)
+end
 
-    if input_state.input_direction == LEFT and self.face > L5 then
-        self.time_in_neutral_input = 0
+function Racer:decelerate(dt, current_speed)
+    local decel = self.DECELERATION * dt 
+    local finalSpeed = math.max(self.MIN_SPEED, current_speed - decel)
 
-        if input_state.press_time > TURNING_TIMES[self.current_turn_state] then
-            self.face = self.face - 1
-            self.current_turn_state = self.current_turn_state + 1
-        end
+    self.vSpeed:normalize()
+    self.vSpeed:scale(finalSpeed)
+end
 
-        if self.face > M then
-            if input_state.press_time > COUNTERTURNING_TIMES[self.current_counterturn_state] then
-                self.face = self.face - 1
-                self.current_counterturn_state = self.current_counterturn_state + 1
-            end
-        end
-
-        if self.face <= L3 then
-            self.tires_smoking = true
-        end
-
-    elseif input_state.input_direction == RIGHT and self.face < R5 then
-        self.time_in_neutral_input = 0
-
-        if input_state.press_time > TURNING_TIMES[self.current_turn_state] then
-            self.face = self.face + 1
-            self.current_turn_state = self.current_turn_state + 1
-        end
-
-        if self.face < M then
-            if input_state.press_time > COUNTERTURNING_TIMES[self.current_counterturn_state] then
-                self.face = self.face + 1
-                self.current_counterturn_state = self.current_counterturn_state + 1
-            end
-        end
-
-        if self.face >= R3 then
-            self.tires_smoking = true
-        end
-
-    elseif input_state.input_direction == STRAIGHT then
-        self.tires_smoking = false
-        self.time_in_neutral_input = self.time_in_neutral_input + dt
+function Racer:update_direction(dt, input_state)
     
-        if self.face < M then -- facing left
-            if self.time_in_neutral_input > RETURNING_TIMES[self.current_turn_state] then
-                self.face = self.face + 1
-                self.current_turn_state = self.current_turn_state + 1
-            end
-        elseif self.face > M then -- facing right
-            if self.time_in_neutral_input > RETURNING_TIMES[self.current_turn_state] then
-                self.face = self.face - 1
-                self.current_turn_state = self.current_turn_state + 1
-            end
+end
+
+function Racer:update_speed(dt, input_state)
+    local speedModule = self.vSpeed:getModule()
+
+    if input_state.accelerating and speedModule < self.MAX_SPEED then
+        self:accelerate(dt)
+    elseif self.vSpeed:getModule() > self.MIN_SPEED then 
+        self:decelerate(dt, speedModule)
+    end
+end
+
+
+function Racer:update_position(dt)
+    self.x = self.x + self.vSpeed.x * dt
+    self.y = self.y + self.vSpeed.y * dt
+end
+
+function Racer:update_sprite(dt, input_state)
+    self.face = MIDDLE
+
+    if input_state.input_direction ~= STRAIGHT and self.face == MIDDLE then
+        if input_state.input_direction == LEFT then
+            self.face = L1
         else
-            self.time_in_neutral_input = 0
-            self.current_turn_state = 1
-            self.current_counterturn_state = 1
+            self.face = R1
         end
     end
 
-    self.direction = input_state.input_direction
+    -- Aqui a face do racer deve ser atualizada de acordo com o dot product dos vetores de velocidade e direção
+    -- dot = 1, face = MIDDLE
+end
+
+function Racer:update(dt, input_state)
+    self:update_direction(dt, input_state)
+    self:update_speed(dt, input_state)
+    self:update_position(dt, input_state)
+    
+
+    self:update_sprite(dt, input_state)
+
+    -- com base no vetor de direção, o paralax do fundo deve ser realizado (vetor -> pan pelo sprite do fundo) 
 end
 
 function Racer:draw()
-    love.graphics.draw(self.mario_spritesheet, self.faces_sprites[self.face], self.x, self.y)
+    love.graphics.draw(self.mario_spritesheet, self.faces_sprites[self.face], self.SCREEN_X, self.SCREEN_Y)
+
+    love.graphics.print(self.vSpeed.x, 0, 0)
+    love.graphics.print(self.vSpeed.y, 0, 20)
 end
 
 return Racer

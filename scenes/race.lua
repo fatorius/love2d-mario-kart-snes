@@ -3,7 +3,7 @@ local Racer = require("entities.racer")
 scene = {}
 entities = {}
 
-input_state = {}
+local input_state = {}
 
 -- Constantes de direções
 local LEFT = -1
@@ -23,6 +23,7 @@ function scene.load()
 end
 
 function scene.update(dt)
+    -- Direction of movement
     local inputing_left = love.keyboard.isDown('left') and 1 or 0
     local inputing_right = love.keyboard.isDown('right') and 1 or 0
 
@@ -38,11 +39,15 @@ function scene.update(dt)
     else
         input_state.press_time = 0
     end
+    
+    -- Acceleration
+    input_state.accelerating = love.keyboard.isDown("z")
 
     for _, e in ipairs(entities) do
         e:update(dt, input_state)
     end
 
+    -- Side-effects
     input_state.previous_direction = input_state.input_direction
     input_state.direction_changed = false
 end
