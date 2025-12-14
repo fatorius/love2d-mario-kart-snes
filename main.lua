@@ -1,10 +1,10 @@
 local currentScene = nil
 
-local VIRTUAL_W = 256
-local VIRTUAL_H = 224
+VIRTUAL_W = 256
+VIRTUAL_H = 224
 
-local SCALE_X = 1
-local SCALE_Y = 1
+SCALE_X = 1
+SCALE_Y = 1
 
 function loadScene(name)
     currentScene = require("scenes." .. name)

@@ -122,8 +122,10 @@ end
 function Racer:update_speed(dt, input_state)
     local speedModule = self.vSpeed:getModule()
 
-    if input_state.accelerating and speedModule < self.MAX_SPEED then
-        self:accelerate(dt)
+    if input_state.accelerating then
+        if speedModule < self.MAX_SPEED then
+            self:accelerate(dt)
+        end
     elseif self.vSpeed:getModule() > self.MIN_SPEED then 
         self:decelerate(dt, speedModule)
     end

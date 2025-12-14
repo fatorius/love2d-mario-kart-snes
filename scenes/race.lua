@@ -1,8 +1,10 @@
 local Racer = require("entities.racer")
+local WorldMap = require("entities.worldmap")
 
 scene = {}
 entities = {}
 
+local racer
 local input_state = {}
 
 -- Constantes de direções
@@ -13,8 +15,10 @@ local RIGHT = 1
 function scene.load()
     love.graphics.setBackgroundColor(0.9686, 0.8784, 0.5137)
 
-    local r = Racer:new()
-    table.insert(entities, r)
+    racer = Racer:new()
+    world_map = WorldMap:new()
+
+    -- table.insert(entities, e)
 
     input_state.input_direction = STRAIGHT
     input_state.previous_direction = STRAIGHT
@@ -43,8 +47,11 @@ function scene.update(dt)
     -- Acceleration
     input_state.accelerating = love.keyboard.isDown("z")
 
+    racer:update(dt, input_state)
+    world_map:update(dt, racer)
+
     for _, e in ipairs(entities) do
-        e:update(dt, input_state)
+        e:update(dt)
     end
 
     -- Side-effects
@@ -53,6 +60,9 @@ function scene.update(dt)
 end
 
 function scene.draw()
+    world_map:draw()
+    racer:draw()
+
     for _, e in ipairs(entities) do
         e:draw()
     end
