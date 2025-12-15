@@ -33,9 +33,9 @@ function Racer:new()
     r.smoke_sprites = {}
 
     -- consts
-    r.ACCELERATION = 5
-    r.DECELERATION = 6
-    r.MAX_SPEED = 15
+    r.ACCELERATION = 50
+    r.DECELERATION = 60
+    r.MAX_SPEED = 200
     r.MIN_SPEED = 0
 
     -- states
